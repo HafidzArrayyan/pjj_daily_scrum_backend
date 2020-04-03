@@ -14,22 +14,26 @@ class UserController extends Controller
 {
     //tambahkan ini
     public function login(Request $request){
-        $credentials = $request->only('email','password');
-        try{
-            if(! $token = JWTAuth::attempt($credentials)){
-                return response()->json([
-                    'logged' => false,
-                    'message' => 'invalid email and password'
-                ], 400);
-                }
-            } catch (Exception $e){
-                return response()->json(['error'=>'could_not_create_token'], 500);
-            }
-            return response()->json([
-                "logged" => true,
-                "token" => $token,
-                "message" => 'Login berhasi'
-            ]);
+		$credentials = $request->only('email', 'password');
+
+		try {
+			if(!$token = JWTAuth::attempt($credentials)){
+				return response()->json([
+						'logged' 	=>  false,
+						'message' 	=> 'Invalid email and password'
+					]);
+			}
+		} catch(JWTException $e){
+			return response()->json([
+						'logged' 	=> false,
+						'message' 	=> 'Generate Token Failed'
+					]);
+		}
+		return response()->json([
+					"logged"    => true,
+                    "token"     => $token,
+                    "message" 	=> 'Login berhasil'
+		]);
         }
         public function register(Request $request){
             $validator = Validator::make($request->all(), [
@@ -40,17 +44,24 @@ class UserController extends Controller
                 'password_verify'=>'required|string|min:8',
             ]);
             if($validator->fails()){
-                return response()->json($validator->errors()->toJson(),400);
+                return response()->json([
+                    'status'	=> 0,
+                    'message'	=> $validator->errors()
+                ]);
             }
-            $user = User::create([
-                'firstname'=>$request->get('firstname'),
-                'lastname'=>$request->get('lastname'),
-                'email'=>$request->get('email'),
-                'password'=>Hash::make($request->get('password')),
-                'password_verify'=>Hash::make($request->get('password_verify')),
-            ]);
+            $user = new User();
+            $user->firstname            =$request->firstname;
+            $user->lastname             =$request->lastname;
+            $user->email                =$request->email;
+            $user->password             =Hash::make($request->password);
+            $user->password_verify      =Hash::make($request->password_verify);
+            $user->save();
+
             $token = JWTAuth::fromUser($user);
-            return response()->json(compact('user','token'), 201);
+            		return response()->json([
+			            'status'	=> '1',
+			            'message'	=> 'User berhasil ditambahkan'
+		    ], 201);
         }
         public function LoginCheck(){
             try {
